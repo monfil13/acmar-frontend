@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import client from '../api/client'
 import AppLayout from '../layouts/AppLayout'
 import { useAuth } from '../context/useAuth'
@@ -6,155 +6,178 @@ import { useAuth } from '../context/useAuth'
 export default function CrearNotaPage() {
   const { user } = useAuth()
 
+  const [ubicaciones, setUbicaciones] = useState([])
+  const [inventario, setInventario] = useState([])
+
+  const [search, setSearch] = useState('')
+  const [seleccionados, setSeleccionados] = useState([])
+
   const [form, setForm] = useState({
     tipo: 'venta',
     origen: '',
     destino: '',
     cliente: '',
     comentario: '',
-    materiales: '',
   })
-
-  const [loading, setLoading] = useState(false)
 
   const isAdmin = ['super_admin', 'admin', 'control'].includes(user?.rol)
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+  // 🔥 cargar ubicaciones
+  useEffect(() => {
+    const fetchUbicaciones = async () => {
+      try {
+        const res = await client.get('/inventario/ubicaciones')
+        setUbicaciones(res.data || [])
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchUbicaciones()
+  }, [])
+
+  // 🔥 cargar inventario
+  useEffect(() => {
+    const fetchInventario = async () => {
+      try {
+        const res = await client.get('/inventario?limit=1000')
+        setInventario(res.data.inventario || [])
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchInventario()
+  }, [])
+
+  const filtered = inventario.filter((i) =>
+    i.material.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const addMaterial = (item) => {
+    if (seleccionados.find(m => m.material === item.material)) return
+    setSeleccionados([...seleccionados, item])
+  }
+
+  const removeMaterial = (material) => {
+    setSeleccionados(seleccionados.filter(m => m.material !== material))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    setLoading(true)
-
     try {
-      const materialesArray = form.materiales
-        .split(',')
-        .map(m => m.trim())
-        .filter(Boolean)
-
       const payload = {
-        tipo: form.tipo,
-        origen: form.origen,
-        destino: form.destino,
-        cliente: form.tipo === 'venta' ? form.cliente : '',
-        comentario: form.comentario,
-        materiales: materialesArray,
+        ...form,
+        materiales: seleccionados.map(m => m.material),
       }
 
-      const res = await client.post('/notas', payload)
+      await client.post('/notas', payload)
 
-      alert('✅ Nota creada correctamente: ' + res.data.nota.folio)
+      alert('✅ Nota creada')
 
-      // reset
+      setSeleccionados([])
       setForm({
         tipo: 'venta',
         origen: '',
         destino: '',
         cliente: '',
         comentario: '',
-        materiales: '',
       })
 
     } catch (err) {
-      alert(err.response?.data?.message || 'Error al crear nota')
-    } finally {
-      setLoading(false)
+      alert(err.response?.data?.message || 'Error')
     }
   }
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Crear Nota</h1>
+      <div className="max-w-4xl mx-auto space-y-4">
 
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow space-y-4">
+        <h1 className="text-2xl font-bold">Crear Nota</h1>
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl space-y-4">
 
           {/* Tipo */}
-          <div>
-            <label className="text-sm">Tipo</label>
-            <select
-              name="tipo"
-              value={form.tipo}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2"
-            >
-              <option value="venta">Venta</option>
-              {isAdmin && <option value="remision">Remisión</option>}
-            </select>
-          </div>
+          <select name="tipo" value={form.tipo}
+            onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+            className="w-full border rounded-xl px-3 py-2"
+          >
+            <option value="venta">Venta</option>
+            {isAdmin && <option value="remision">Remisión</option>}
+          </select>
 
           {/* Origen */}
-          <div>
-            <label className="text-sm">Origen</label>
-            <input
-              name="origen"
-              value={form.origen}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2"
-              required
-            />
-          </div>
+          <select
+            value={form.origen}
+            onChange={(e) => setForm({ ...form, origen: e.target.value })}
+            className="w-full border rounded-xl px-3 py-2"
+          >
+            <option value="">Selecciona origen</option>
+            {ubicaciones.map((u) => (
+              <option key={u}>{u}</option>
+            ))}
+          </select>
 
           {/* Destino */}
-          <div>
-            <label className="text-sm">Destino</label>
-            <input
-              name="destino"
-              value={form.destino}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2"
-              required
-            />
-          </div>
+          <select
+            value={form.destino}
+            onChange={(e) => setForm({ ...form, destino: e.target.value })}
+            className="w-full border rounded-xl px-3 py-2"
+          >
+            <option value="">Selecciona destino</option>
+            {ubicaciones.map((u) => (
+              <option key={u}>{u}</option>
+            ))}
+          </select>
 
           {/* Cliente */}
           {form.tipo === 'venta' && (
-            <div>
-              <label className="text-sm">Cliente</label>
-              <input
-                name="cliente"
-                value={form.cliente}
-                onChange={handleChange}
-                className="w-full border rounded-xl px-3 py-2"
-              />
-            </div>
+            <input
+              placeholder="Cliente"
+              value={form.cliente}
+              onChange={(e) => setForm({ ...form, cliente: e.target.value })}
+              className="w-full border rounded-xl px-3 py-2"
+            />
           )}
 
-          {/* Comentario */}
-          <div>
-            <label className="text-sm">Comentario</label>
-            <textarea
-              name="comentario"
-              value={form.comentario}
-              onChange={handleChange}
-              className="w-full border rounded-xl px-3 py-2"
-            />
+          {/* 🔍 Buscador */}
+          <input
+            placeholder="Buscar material..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full border rounded-xl px-3 py-2"
+          />
+
+          {/* Lista */}
+          <div className="max-h-40 overflow-auto border rounded-xl">
+            {filtered.slice(0, 10).map((item) => (
+              <div
+                key={item.material}
+                onClick={() => addMaterial(item)}
+                className="px-3 py-2 hover:bg-slate-100 cursor-pointer"
+              >
+                {item.material} - {item.descripcion}
+              </div>
+            ))}
           </div>
 
-          {/* Materiales */}
-          <div>
-            <label className="text-sm">
-              Materiales (separados por coma)
-            </label>
-            <input
-              name="materiales"
-              value={form.materiales}
-              onChange={handleChange}
-              placeholder="MAT001, MAT002"
-              className="w-full border rounded-xl px-3 py-2"
-              required
-            />
+          {/* Seleccionados */}
+          <div className="flex flex-wrap gap-2">
+            {seleccionados.map((m) => (
+              <div key={m.material}
+                className="bg-slate-900 text-white px-3 py-1 rounded-full flex gap-2">
+                {m.material}
+                <button onClick={() => removeMaterial(m.material)}>x</button>
+              </div>
+            ))}
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-slate-900 text-white px-4 py-2 rounded-xl"
-          >
-            {loading ? 'Creando...' : 'Crear Nota'}
+          <button className="bg-slate-900 text-white px-4 py-2 rounded-xl">
+            Crear Nota
           </button>
+
         </form>
       </div>
     </AppLayout>

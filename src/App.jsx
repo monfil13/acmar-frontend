@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import InventarioPage from './pages/InventarioPage'
 import NotasPage from './pages/NotasPage'
+import CrearNotaPage from './pages/CrearNotaPage'
 
 // NUEVAS PÁGINAS (las vamos a crear)
 import VentasPage from './pages/VentasPage'
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/ventas" element={<ProtectedRoute><VentasPage /></ProtectedRoute>} />
           <Route path="/corte" element={<ProtectedRoute><CortePage /></ProtectedRoute>} />
           <Route path="/carga-excel" element={<ProtectedRoute><CargaExcelPage /></ProtectedRoute>} />
+          <Route path="/crear-nota" element={<CrearNotaPage />} />
 
           {/* LEGACY: si alguien entra, no se rompe */}
           <Route path="/reportes" element={<ProtectedRoute><ReportesPage /></ProtectedRoute>} />

@@ -19,6 +19,7 @@ export default function AppLayout({ children }) {
       { to: '/notas', label: 'Notas' },
       { to: '/ventas', label: 'Ventas' },
       { to: '/corte', label: 'Corte' },
+      { to: '/crear-nota', label: 'Crear Nota' }
     ]
 
     if (canSeeExcel) {

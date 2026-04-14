@@ -16,7 +16,6 @@ export default function InventarioPage() {
     ubicacion: '',
   })
 
-  // 🔥 MODALES + FORM
   const [selectedItem, setSelectedItem] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState({})
@@ -33,8 +32,8 @@ export default function InventarioPage() {
       try {
         const res = await client.get('/inventario/ubicaciones')
         setUbicaciones(res.data || [])
-      } catch (err) {
-        console.error(err)
+      } catch (error) {
+        console.error('Error cargando ubicaciones:', error)
       }
     }
 
@@ -44,24 +43,25 @@ export default function InventarioPage() {
   /** =========================
    * INVENTARIO
    * ========================= */
-  useEffect(() => {
-    const fetchInventario = async () => {
-      setError('')
+  const fetchInventario = async () => {
+    setError('')
 
-      try {
-        const query = new URLSearchParams({
-          ...(filters.q && { q: filters.q }),
-          ...(filters.estatus && { estatus: filters.estatus }),
-          ...(filters.ubicacion && { ubicacion: filters.ubicacion }),
-        }).toString()
+    try {
+      const query = new URLSearchParams({
+        ...(filters.q && { q: filters.q }),
+        ...(filters.estatus && { estatus: filters.estatus }),
+        ...(filters.ubicacion && { ubicacion: filters.ubicacion }),
+      }).toString()
 
-        const res = await client.get(`/inventario?${query}`)
-        setInventario(res.data.inventario || [])
-      } catch (err) {
-        setError(err.response?.data?.message || 'Error al cargar inventario')
-      }
+      const res = await client.get(`/inventario?${query}`)
+      setInventario(res.data.inventario || [])
+    } catch (error) {
+      console.error('Error cargando inventario:', error)
+      setError(error.response?.data?.message || 'Error al cargar inventario')
     }
+  }
 
+  useEffect(() => {
     fetchInventario()
   }, [filters])
 
@@ -79,16 +79,15 @@ export default function InventarioPage() {
         ubicacion_actual: form.ubicacion_actual,
       })
 
-      const res = await client.get('/inventario')
-      setInventario(res.data.inventario || [])
+      await fetchInventario()
 
       setEditingItem(null)
       setForm({})
 
-    } catch (err) {
-  console.error(err)
-  alert('Error al actualizar')
-} finally {
+    } catch (error) {
+      console.error('Error actualizando equipo:', error)
+      alert('Error al actualizar')
+    } finally {
       setSaving(false)
     }
   }
@@ -97,9 +96,7 @@ export default function InventarioPage() {
     <AppLayout>
       <h1 className="text-2xl font-bold mb-4">Inventario</h1>
 
-      {/* =========================
-          FILTROS
-      ========================= */}
+      {/* FILTROS */}
       <div className="bg-white p-4 rounded-xl border mb-4 flex gap-3 flex-wrap">
 
         <input
@@ -141,9 +138,7 @@ export default function InventarioPage() {
         )}
       </div>
 
-      {/* =========================
-          TABLA
-      ========================= */}
+      {/* TABLA */}
       <div className="bg-white rounded-xl border overflow-auto">
 
         {error ? (
@@ -201,9 +196,6 @@ export default function InventarioPage() {
                     {item.ubicacion_actual || '-'}
                   </td>
 
-                  {/* =========================
-                      ACCIONES
-                  ========================= */}
                   <td className="px-3 py-2 flex gap-2">
 
                     <button
@@ -241,9 +233,7 @@ export default function InventarioPage() {
         )}
       </div>
 
-      {/* =========================
-          MODAL VISTA
-      ========================= */}
+      {/* MODAL DETALLE */}
       {selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-xl w-[600px]">
@@ -273,9 +263,7 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {/* =========================
-          MODAL EDICIÓN
-      ========================= */}
+      {/* MODAL EDICIÓN */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-xl w-[600px]">

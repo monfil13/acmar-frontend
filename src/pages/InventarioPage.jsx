@@ -66,7 +66,7 @@ export default function InventarioPage() {
   }, [filters])
 
   /** =========================
-   * GUARDAR EDICIÓN
+   * GUARDAR
    * ========================= */
   const saveEdit = async () => {
     try {
@@ -85,7 +85,7 @@ export default function InventarioPage() {
       setForm({})
 
     } catch (error) {
-      console.error('Error actualizando equipo:', error)
+      console.error('Error actualizando:', error)
       alert('Error al actualizar')
     } finally {
       setSaving(false)
@@ -145,16 +145,11 @@ export default function InventarioPage() {
           <div className="p-4 text-red-600">{error}</div>
         ) : (
           <table className="w-full text-sm">
-
             <thead>
               <tr className="bg-gray-100 text-left">
                 <th className="px-3 py-2">Material</th>
                 <th className="px-3 py-2">Descripción</th>
                 <th className="px-3 py-2">Color</th>
-                <th className="px-3 py-2">IMEI</th>
-                <th className="px-3 py-2">ICCID</th>
-                <th className="px-3 py-2">Público</th>
-                <th className="px-3 py-2">Mayoreo</th>
                 <th className="px-3 py-2">Estatus</th>
                 <th className="px-3 py-2">Ubicación</th>
                 <th className="px-3 py-2">Acciones</th>
@@ -165,36 +160,13 @@ export default function InventarioPage() {
               {inventario.map((item) => (
                 <tr key={item.material} className="border-t">
 
-                  <td className="px-3 py-2 font-medium">
-                    {item.material}
-                  </td>
-
+                  <td className="px-3 py-2">{item.material}</td>
                   <td className="px-3 py-2">{item.descripcion}</td>
                   <td className="px-3 py-2">{item.color}</td>
-                  <td className="px-3 py-2">{item.imei || '-'}</td>
-                  <td className="px-3 py-2">{item.iccid || '-'}</td>
 
-                  <td className="px-3 py-2">
-                    ${item.precio_publico || 0}
-                  </td>
+                  <td className="px-3 py-2">{item.estatus}</td>
 
-                  <td className="px-3 py-2">
-                    ${item.precio_mayoreo || 0}
-                  </td>
-
-                  <td className="px-3 py-2">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      item.estatus === 'vendido'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {item.estatus || 'disponible'}
-                    </span>
-                  </td>
-
-                  <td className="px-3 py-2">
-                    {item.ubicacion_actual || '-'}
-                  </td>
+                  <td className="px-3 py-2">{item.ubicacion_actual}</td>
 
                   <td className="px-3 py-2 flex gap-2">
 
@@ -220,34 +192,45 @@ export default function InventarioPage() {
                   </td>
                 </tr>
               ))}
-
-              {inventario.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="text-center py-6 text-gray-500">
-                    No hay registros
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* MODAL DETALLE */}
+      {/* MODAL VER */}
       {selectedItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-xl w-[600px]">
 
             <h2 className="text-lg font-bold mb-4">Detalle del equipo</h2>
 
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <p><b>Material:</b> {selectedItem.material}</p>
-              <p><b>Descripción:</b> {selectedItem.descripcion}</p>
-              <p><b>Color:</b> {selectedItem.color}</p>
-              <p><b>IMEI:</b> {selectedItem.imei || '-'}</p>
-              <p><b>ICCID:</b> {selectedItem.iccid || '-'}</p>
-              <p><b>Estatus:</b> {selectedItem.estatus}</p>
-              <p><b>Ubicación:</b> {selectedItem.ubicacion_actual}</p>
+            <div className="space-y-2 text-sm">
+
+              <div>
+                <label className="font-semibold">Material</label>
+                <p>{selectedItem.material}</p>
+              </div>
+
+              <div>
+                <label className="font-semibold">Descripción</label>
+                <p>{selectedItem.descripcion}</p>
+              </div>
+
+              <div>
+                <label className="font-semibold">Color</label>
+                <p>{selectedItem.color}</p>
+              </div>
+
+              <div>
+                <label className="font-semibold">Estatus</label>
+                <p>{selectedItem.estatus}</p>
+              </div>
+
+              <div>
+                <label className="font-semibold">Ubicación</label>
+                <p>{selectedItem.ubicacion_actual}</p>
+              </div>
+
             </div>
 
             <div className="flex justify-end mt-4">
@@ -263,56 +246,79 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {/* MODAL EDICIÓN */}
+      {/* MODAL EDITAR */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-xl w-[600px]">
 
             <h2 className="text-lg font-bold mb-4">Editar equipo</h2>
 
-            <input
-              value={form.material || ''}
-              disabled
-              className="w-full border p-2 mb-2 bg-gray-100"
-            />
+            <div className="space-y-3">
 
-            <input
-              value={form.descripcion || ''}
-              onChange={(e) =>
-                setForm({ ...form, descripcion: e.target.value })
-              }
-              className="w-full border p-2 mb-2"
-              placeholder="Descripción"
-            />
+              <div>
+                <label className="block text-sm font-medium">Material</label>
+                <input
+                  value={form.material || ''}
+                  disabled
+                  className="w-full border p-2 bg-gray-100"
+                />
+              </div>
 
-            <input
-              value={form.color || ''}
-              onChange={(e) =>
-                setForm({ ...form, color: e.target.value })
-              }
-              className="w-full border p-2 mb-2"
-              placeholder="Color"
-            />
+              <div>
+                <label className="block text-sm font-medium">Descripción</label>
+                <input
+                  value={form.descripcion || ''}
+                  onChange={(e) =>
+                    setForm({ ...form, descripcion: e.target.value })
+                  }
+                  className="w-full border p-2"
+                />
+              </div>
 
-            <select
-              value={form.estatus || ''}
-              onChange={(e) =>
-                setForm({ ...form, estatus: e.target.value })
-              }
-              className="w-full border p-2 mb-2"
-            >
-              <option value="disponible">Disponible</option>
-              <option value="vendido">Vendido</option>
-            </select>
+              <div>
+                <label className="block text-sm font-medium">Color</label>
+                <input
+                  value={form.color || ''}
+                  onChange={(e) =>
+                    setForm({ ...form, color: e.target.value })
+                  }
+                  className="w-full border p-2"
+                />
+              </div>
 
-            <input
-              value={form.ubicacion_actual || ''}
-              onChange={(e) =>
-                setForm({ ...form, ubicacion_actual: e.target.value })
-              }
-              className="w-full border p-2 mb-2"
-              placeholder="Ubicación"
-            />
+              <div>
+                <label className="block text-sm font-medium">Estatus</label>
+                <select
+                  value={form.estatus || ''}
+                  onChange={(e) =>
+                    setForm({ ...form, estatus: e.target.value })
+                  }
+                  className="w-full border p-2"
+                >
+                  <option value="disponible">Disponible</option>
+                  <option value="vendido">Vendido</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium">Ubicación</label>
+                <select
+                  value={form.ubicacion_actual || ''}
+                  onChange={(e) =>
+                    setForm({ ...form, ubicacion_actual: e.target.value })
+                  }
+                  className="w-full border p-2"
+                >
+                  <option value="">Seleccionar ubicación</option>
+                  {ubicaciones.map((u, i) => (
+                    <option key={i} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+            </div>
 
             <div className="flex justify-end gap-2 mt-4">
 

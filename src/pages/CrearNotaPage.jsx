@@ -13,27 +13,39 @@ export default function CrearNotaPage() {
   })
 
   const [ubicaciones, setUbicaciones] = useState([])
-const clientes = [
-  'CLIENTE GENERAL',
-  'CLIENTE MAYOREO',
-  'DISTRIBUIDOR',
-] 
-
   const [inventario, setInventario] = useState([])
+
   const [loading, setLoading] = useState(false)
+  const [loadingInv, setLoadingInv] = useState(false)
+
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   /** =========================
-   * Cargar ubicaciones
+   * CLIENTES (TEMPORAL)
+   * ========================= */
+  const clientes = [
+    'CLIENTE GENERAL',
+    'CLIENTE MAYOREO',
+    'DISTRIBUIDOR',
+  ]
+
+  /** =========================
+   * UBICACIONES
    * ========================= */
   useEffect(() => {
     const fetchUbicaciones = async () => {
       try {
         const res = await client.get('/inventario/ubicaciones')
-        setUbicaciones(res.data || [])
-      } catch (err) {
-        console.error(err)
+
+        // 🔥 filtrar clientes
+        const limpias = (res.data || []).filter(
+          (u) => !u?.toUpperCase().includes('CLIENTE')
+        )
+
+        setUbicaciones(limpias)
+      } catch (error) {
+        console.error('Error ubicaciones:', error)
       }
     }
 
@@ -41,30 +53,57 @@ const clientes = [
   }, [])
 
   /** =========================
-   * Cargar inventario
+   * INVENTARIO POR ORIGEN
    * ========================= */
   useEffect(() => {
     const fetchInventario = async () => {
+      if (!form.origen) {
+        setInventario([])
+        return
+      }
+
       try {
-        const res = await client.get('/inventario')
+        setLoadingInv(true)
+
+        const res = await client.get('/inventario', {
+          params: {
+            ubicacion: form.origen,
+            estatus: 'disponible',
+          },
+        })
+
         setInventario(res.data.inventario || [])
-      } catch (err) {
-        console.error(err)
+      } catch (error) {
+        console.error('Error inventario:', error)
+      } finally {
+        setLoadingInv(false)
       }
     }
 
     fetchInventario()
-  }, [])
+  }, [form.origen])
 
   /** =========================
-   * Manejo inputs
+   * INPUTS
    * ========================= */
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+
+    // 🔥 reset materiales si cambia origen
+    if (name === 'origen') {
+      setForm({
+        ...form,
+        origen: value,
+        materiales: [],
+      })
+      return
+    }
+
+    setForm({ ...form, [name]: value })
   }
 
   /** =========================
-   * Selección de materiales
+   * MATERIALES
    * ========================= */
   const toggleMaterial = (material) => {
     setForm((prev) => {
@@ -80,16 +119,14 @@ const clientes = [
   }
 
   /** =========================
-   * Enviar nota
+   * SUBMIT
    * ========================= */
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess('')
 
-    if (!form.origen) {
-      return setError('Selecciona origen')
-    }
+    if (!form.origen) return setError('Selecciona origen')
 
     if (form.tipo === 'venta' && !form.cliente) {
       return setError('Selecciona cliente')
@@ -100,7 +137,7 @@ const clientes = [
     }
 
     if (form.materiales.length === 0) {
-      return setError('Selecciona al menos un material')
+      return setError('Selecciona al menos un equipo')
     }
 
     try {
@@ -117,7 +154,6 @@ const clientes = [
 
       setSuccess('✅ Nota creada correctamente')
 
-      // Reset
       setForm({
         tipo: 'venta',
         origen: '',
@@ -126,8 +162,11 @@ const clientes = [
         comentario: '',
         materiales: [],
       })
-    } catch (err) {
-      setError(err.response?.data?.message || 'Error al crear nota')
+
+      setInventario([])
+
+    } catch (error) {
+      setError(error.response?.data?.message || 'Error al crear nota')
     } finally {
       setLoading(false)
     }
@@ -137,11 +176,11 @@ const clientes = [
     <AppLayout>
       <h1 className="text-2xl font-bold mb-4">Crear Nota</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow space-y-5">
 
-        {/* Tipo */}
+        {/* TIPO */}
         <div>
-          <label className="block text-sm mb-1">Tipo</label>
+          <label className="block text-sm font-medium mb-1">Tipo de movimiento</label>
           <select
             name="tipo"
             value={form.tipo}
@@ -153,9 +192,9 @@ const clientes = [
           </select>
         </div>
 
-        {/* Origen */}
+        {/* ORIGEN */}
         <div>
-          <label className="block text-sm mb-1">Origen</label>
+          <label className="block text-sm font-medium mb-1">Origen (de dónde salen los equipos)</label>
           <select
             name="origen"
             value={form.origen}
@@ -169,10 +208,10 @@ const clientes = [
           </select>
         </div>
 
-        {/* Cliente (VENTA) */}
+        {/* CLIENTE */}
         {form.tipo === 'venta' && (
           <div>
-            <label className="block text-sm mb-1">Cliente</label>
+            <label className="block text-sm font-medium mb-1">Cliente</label>
             <select
               name="cliente"
               value={form.cliente}
@@ -187,10 +226,10 @@ const clientes = [
           </div>
         )}
 
-        {/* Destino (REMISIÓN) */}
+        {/* DESTINO */}
         {form.tipo === 'remision' && (
           <div>
-            <label className="block text-sm mb-1">Destino</label>
+            <label className="block text-sm font-medium mb-1">Destino (a dónde se mueven)</label>
             <select
               name="destino"
               value={form.destino}
@@ -205,9 +244,9 @@ const clientes = [
           </div>
         )}
 
-        {/* Comentarios */}
+        {/* COMENTARIO */}
         <div>
-          <label className="block text-sm mb-1">Comentario</label>
+          <label className="block text-sm font-medium mb-1">Comentario</label>
           <textarea
             name="comentario"
             value={form.comentario}
@@ -218,29 +257,48 @@ const clientes = [
           />
         </div>
 
-        {/* Materiales */}
+        {/* INVENTARIO */}
         <div>
-          <label className="block text-sm mb-2">Seleccionar materiales</label>
+          <label className="block text-sm font-medium mb-2">
+            Equipos disponibles en {form.origen || '...'}
+          </label>
 
-          <div className="max-h-60 overflow-y-auto border rounded p-2">
+          <div className="max-h-64 overflow-y-auto border rounded p-2">
+
+            {!form.origen && (
+              <p className="text-gray-400 text-sm">Selecciona un origen primero</p>
+            )}
+
+            {loadingInv && (
+              <p className="text-sm">Cargando equipos...</p>
+            )}
+
+            {!loadingInv && inventario.length === 0 && form.origen && (
+              <p className="text-sm text-gray-500">No hay equipos disponibles</p>
+            )}
+
             {inventario.map((item) => (
-              <label key={item.material} className="flex items-center gap-2 text-sm mb-1">
+              <label
+                key={item.material}
+                className="flex items-center gap-2 text-sm mb-1 hover:bg-gray-50 p-1 rounded"
+              >
                 <input
                   type="checkbox"
                   checked={form.materiales.includes(item.material)}
                   onChange={() => toggleMaterial(item.material)}
                 />
-                {item.material} - {item.descripcion}
+                <span className="font-medium">{item.material}</span>
+                <span className="text-gray-500">{item.descripcion}</span>
               </label>
             ))}
           </div>
         </div>
 
-        {/* Mensajes */}
+        {/* MENSAJES */}
         {error && <p className="text-red-600">{error}</p>}
         {success && <p className="text-green-600">{success}</p>}
 
-        {/* Botón */}
+        {/* BOTÓN */}
         <button
           type="submit"
           disabled={loading}
@@ -248,6 +306,7 @@ const clientes = [
         >
           {loading ? 'Guardando...' : 'Crear Nota'}
         </button>
+
       </form>
     </AppLayout>
   )

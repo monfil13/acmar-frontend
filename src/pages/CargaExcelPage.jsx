@@ -17,6 +17,49 @@ export default function CargaExcelPage() {
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)
 
+  /** =========================
+   * 📥 Descargar plantilla
+   * ========================= */
+  const downloadTemplate = () => {
+    const headers = [
+      'FACTURA',
+      'MATERIAL',
+      'DESCRIPCION',
+      'COLOR',
+      'CANTIDAD',
+      'DISTRIBUIDOR',
+      'PUBLICO',
+      'FECHA_COMPRA',
+      'IMEI',
+      'IMEI_2',
+      'ICCID',
+      'FECHA_SALIDA',
+      'NUMERO',
+      'ORDEN_BES',
+      'FOLIO',
+      'FECHA_ACT',
+      'ESQUEMA_COBRO',
+      'FECHA_VENTA',
+      'CLIENTE',
+      'COMENTARIOS'
+    ]
+
+    const csvContent = [headers.join(',')].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'plantilla_inventario.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  /** =========================
+   * 📂 Manejo archivo
+   * ========================= */
   const onFileChange = (e) => {
     const f = e.target.files?.[0]
     setError('')
@@ -24,6 +67,9 @@ export default function CargaExcelPage() {
     setFile(f || null)
   }
 
+  /** =========================
+   * 🚀 Subir Excel
+   * ========================= */
   const upload = async () => {
     setError('')
     setResult(null)
@@ -56,6 +102,17 @@ export default function CargaExcelPage() {
     }
   }
 
+  /** =========================
+   * 🔄 Reset
+   * ========================= */
+  const reset = () => {
+    setFile(null)
+    setError('')
+    setResult(null)
+    const input = document.querySelector('input[type="file"]')
+    if (input) input.value = ''
+  }
+
   return (
     <AppLayout>
       <div className="mb-6">
@@ -69,31 +126,38 @@ export default function CargaExcelPage() {
           <p className="text-slate-500 text-sm mt-1">
             Tu rol ({user?.rol || 'N/A'}) no puede cargar inventario por Excel.
           </p>
-          <p className="text-slate-500 text-sm mt-1">
-            Rol normalizado: <span className="font-medium">{role || 'N/A'}</span>
-          </p>
         </div>
       ) : (
         <>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 mb-4">
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+
               <div className="flex-1">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Archivo Excel (.xlsx)
                 </label>
+
                 <input
                   type="file"
                   accept=".xlsx"
                   onChange={onFileChange}
                   className="block w-full text-sm"
                 />
+
                 <p className="text-xs text-slate-500 mt-2">
-                  Columnas requeridas: material, descripcion, color, cantidad, precio_mayoreo,
-                  precio_publico, iccid, numero, estatus, ubicacion_actual
+                  Usa la plantilla oficial para evitar errores de formato.
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+
+                <button
+                  onClick={downloadTemplate}
+                  className="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
+                >
+                  Descargar plantilla
+                </button>
+
                 <button
                   onClick={upload}
                   disabled={loading}
@@ -103,26 +167,49 @@ export default function CargaExcelPage() {
                 </button>
 
                 <button
-                  onClick={() => {
-                    setFile(null)
-                    setError('')
-                    setResult(null)
-                    const input = document.querySelector('input[type="file"]')
-                    if (input) input.value = ''
-                  }}
+                  onClick={reset}
                   className="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
                 >
                   Limpiar
                 </button>
+
               </div>
             </div>
 
-            {error && <div className="mt-3 text-sm text-red-600">{error}</div>}
+            {error && (
+              <div className="mt-3 text-sm text-red-600 font-medium">
+                {error}
+              </div>
+            )}
           </div>
 
           {result && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-              <pre className="text-xs overflow-auto">{JSON.stringify(result, null, 2)}</pre>
+
+              <h2 className="text-lg font-semibold text-slate-800 mb-2">
+                Resultado de carga
+              </h2>
+
+              <p className="text-sm text-green-600">
+                ✔ Insertados: {result.insertados || 0}
+              </p>
+
+              {result.errores?.length > 0 && (
+                <>
+                  <p className="text-sm text-red-600 mt-2">
+                    ⚠ Errores: {result.errores.length}
+                  </p>
+
+                  <div className="mt-2 max-h-40 overflow-auto text-xs bg-slate-50 p-2 rounded">
+                    {result.errores.map((e, i) => (
+                      <div key={i}>
+                        ❌ {e.error}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
             </div>
           )}
         </>

@@ -17,7 +17,7 @@ const clientes = [
   'CLIENTE GENERAL',
   'CLIENTE MAYOREO',
   'DISTRIBUIDOR',
-]
+] 
 
   const [inventario, setInventario] = useState([])
   const [loading, setLoading] = useState(false)

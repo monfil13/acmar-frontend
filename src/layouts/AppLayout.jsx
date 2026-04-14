@@ -33,7 +33,7 @@ export default function AppLayout({ children }) {
     <div className="min-h-screen bg-slate-100 flex">
       <aside className="w-64 bg-slate-900 text-white p-5 flex flex-col">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold">ACMAR</h1>
+          <h1 className="text-2xl font-bold">Accelmar</h1>
           <p className="text-sm text-slate-300">Inventario</p>
         </div>
 
